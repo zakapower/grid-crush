@@ -1,0 +1,8 @@
+﻿# Android / secrets
+android-app/keystore.properties
+android-app/keystore/*.jks
+android-app/keystore/*.keystore
+android-app/.gradle/
+android-app/**/build/
+*.apk
+!rustore/GridCrush-v1.0.0-release.apk
