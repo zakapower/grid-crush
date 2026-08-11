@@ -1714,13 +1714,14 @@
     if (e.target === settingsOverlay) closeSettings();
   });
 
-  document.querySelectorAll(".mode-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
+  const playBtn = document.getElementById("play-btn");
+  if (playBtn) {
+    playBtn.addEventListener("click", () => {
       sfx.unlock();
       sfx.click();
       startMode();
     });
-  });
+  }
 
   continueBtn.addEventListener("click", () => {
     sfx.unlock();

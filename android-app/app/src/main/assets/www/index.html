@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Grid Crush</title>
-  <link rel="stylesheet" href="style.css?v=1.0.0" />
+  <link rel="stylesheet" href="style.css?v=1.1.0" />
 </head>
 <body>
   <div id="menu" class="menu">
@@ -16,20 +16,19 @@
     <div class="menu-inner">
       <header class="menu-hero">
         <h1 class="menu-title">Grid Crush</h1>
-        <p class="menu-sub">Режимы игры:</p>
+        <div class="menu-mini-grid" aria-hidden="true">
+          <span class="menu-block" style="--c:#4aa3ff"></span>
+          <span class="menu-block" style="--c:#57d38c"></span>
+          <span class="menu-block" style="--c:#ffb454"></span>
+          <span class="menu-block" style="--c:#ff6b8a"></span>
+          <span class="menu-block" style="--c:#b388ff"></span>
+          <span class="menu-block" style="--c:#ff8f5a"></span>
+        </div>
+        <p class="menu-record">Рекорд · <span data-best="classic">—</span></p>
       </header>
 
-      <div class="mode-list">
-        <button type="button" class="mode-btn" data-mode="classic">
-          <span class="mode-top">
-            <span class="mode-name">Классика</span>
-            <span class="mode-best" data-best="classic">—</span>
-          </span>
-          <span class="mode-desc">Обычный режим</span>
-        </button>
-      </div>
-
       <div class="menu-actions">
+        <button type="button" id="play-btn" class="play-btn">Играть</button>
         <button type="button" id="continue-btn" class="continue-btn hidden">Продолжить</button>
       </div>
     </div>
@@ -124,6 +123,6 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.0.0"></script>
+  <script src="game.js?v=1.1.0"></script>
 </body>
 </html>
