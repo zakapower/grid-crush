@@ -5,10 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Grid Crush</title>
-  <link rel="stylesheet" href="style.css?v=1.1.0" />
+  <link rel="stylesheet" href="style.css?v=1.2.3" />
 </head>
 <body>
   <div id="menu" class="menu">
+    <div class="menu-bg" aria-hidden="true">
+      <span class="menu-bg-block" style="--c:#4aa3ff; --x:8%; --s:22px; --d:0s; --t:18s; --o:0.22"></span>
+      <span class="menu-bg-block" style="--c:#57d38c; --x:22%; --s:16px; --d:-3s; --t:22s; --o:0.18"></span>
+      <span class="menu-bg-block" style="--c:#ffb454; --x:38%; --s:28px; --d:-7s; --t:16s; --o:0.2"></span>
+      <span class="menu-bg-block" style="--c:#ff6b8a; --x:55%; --s:18px; --d:-1s; --t:20s; --o:0.2"></span>
+      <span class="menu-bg-block" style="--c:#b388ff; --x:72%; --s:24px; --d:-5s; --t:19s; --o:0.18"></span>
+      <span class="menu-bg-block" style="--c:#35d0d6; --x:88%; --s:14px; --d:-9s; --t:24s; --o:0.22"></span>
+      <span class="menu-bg-block" style="--c:#ff8f5a; --x:14%; --s:20px; --d:-12s; --t:21s; --o:0.16"></span>
+      <span class="menu-bg-block" style="--c:#4aa3ff; --x:46%; --s:12px; --d:-4s; --t:17s; --o:0.2"></span>
+      <span class="menu-bg-block" style="--c:#57d38c; --x:64%; --s:26px; --d:-8s; --t:23s; --o:0.15"></span>
+      <span class="menu-bg-block" style="--c:#ffb454; --x:80%; --s:18px; --d:-2s; --t:15s; --o:0.18"></span>
+      <span class="menu-bg-block menu-bg-block--drift" style="--c:#b388ff; --x:30%; --s:34px; --d:-6s; --t:26s; --o:0.12"></span>
+      <span class="menu-bg-block menu-bg-block--drift" style="--c:#ff6b8a; --x:70%; --s:30px; --d:-11s; --t:28s; --o:0.12"></span>
+    </div>
+
     <button type="button" id="settings-btn" class="icon-btn icon-btn--corner" aria-label="Настройки" title="Настройки">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
@@ -29,7 +44,6 @@
 
       <div class="menu-actions">
         <button type="button" id="play-btn" class="play-btn">Играть</button>
-        <button type="button" id="continue-btn" class="continue-btn hidden">Продолжить</button>
       </div>
     </div>
   </div>
@@ -123,6 +137,6 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.1.0"></script>
+  <script src="game.js?v=1.2.3"></script>
 </body>
 </html>

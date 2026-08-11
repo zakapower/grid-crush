@@ -79,7 +79,6 @@
   const pauseMenuBtn = document.getElementById("pause-menu-btn");
   const menuEl = document.getElementById("menu");
   const appEl = document.getElementById("app");
-  const continueBtn = document.getElementById("continue-btn");
   const settingsBtn = document.getElementById("settings-btn");
   const settingsOverlay = document.getElementById("settings-overlay");
   const settingsSoundBtn = document.getElementById("settings-sound-btn");
@@ -94,7 +93,7 @@
   const THEME_KEY = "blockBlastTheme";
   const STREAK_BONUS = 40;
   const PLACE_POINTS = 2;
-  const MASTER_VOLUME = 8;
+  const MASTER_VOLUME = 2.6;
 
   const theme = (() => {
     let current = "dark";
@@ -368,119 +367,157 @@
         return muted;
       },
       place() {
-        // Сухой тап: короткий шум + клик вниз
-        noise({ dur: 0.025, gain: 0.032, freq: 2400, type: "bandpass", q: 2.4 });
+        // Один короткий тап — без стопки осцилляторов
+        noise({ dur: 0.02, gain: 0.04, freq: 2200, type: "bandpass", q: 2.2 });
         tone({
-          freq: 700,
-          freqEnd: 260,
+          freq: 620,
+          freqEnd: 280,
           type: "triangle",
-          dur: 0.055,
-          gain: 0.058,
+          dur: 0.05,
+          gain: 0.07,
           attack: 0.002,
         });
-        tone({
-          freq: 1100,
-          freqEnd: 760,
-          type: "sine",
-          dur: 0.035,
-          gain: 0.02,
-          delay: 0.014,
-          attack: 0.001,
-        });
       },
-      clear(lines = 1) {
-        const n = Math.max(1, Math.min(8, lines | 0));
-        // Хруст + свип вверх (без длинного арпеджио)
-        thud({ freq: 95 + n * 5, dur: 0.09 + n * 0.008, gain: 0.08 + n * 0.01 });
+      clear(lines = 1, streak = 1) {
+        const n = Math.max(1, Math.min(5, lines | 0));
+        const s = Math.max(1, Math.min(8, streak | 0));
+        // Клир по числу линий — стабильная громкость; серия = отдельная мелодия сверху
+        thud({
+          freq: 95 + n * 14,
+          dur: 0.07 + n * 0.018,
+          gain: 0.08 + n * 0.01,
+        });
         noise({
-          dur: 0.07 + n * 0.014,
-          gain: 0.052 + n * 0.008,
-          freq: 1100 + n * 120,
+          dur: 0.05 + n * 0.016,
+          gain: 0.04 + n * 0.007,
+          freq: 1000 + n * 180,
           type: "bandpass",
           q: 0.8,
         });
         tone({
-          freq: 360 + n * 35,
-          freqEnd: 980 + n * 150,
+          freq: 340 + n * 55,
+          freqEnd: 780 + n * 160,
           type: "sine",
-          dur: 0.12 + n * 0.018,
-          gain: 0.058,
-          delay: 0.018,
+          dur: 0.1 + n * 0.025,
+          gain: 0.055 + n * 0.007,
+          delay: 0.012,
           attack: 0.003,
         });
-        tone({
-          freq: 640 + n * 45,
-          freqEnd: 1500 + n * 170,
-          type: "triangle",
-          dur: 0.1 + n * 0.014,
-          gain: 0.038,
-          delay: 0.03,
-          attack: 0.002,
-        });
+
         if (n >= 2) {
-          noise({
-            dur: 0.09,
-            gain: 0.028,
-            delay: 0.04,
-            freq: 2000,
-            type: "highpass",
-            q: 0.55,
-          });
+          thud({ freq: 140 + n * 10, dur: 0.07, gain: 0.05, delay: 0.045 });
           tone({
-            freq: 520,
-            freqEnd: 1040,
-            type: "sine",
-            dur: 0.16,
-            gain: 0.042,
+            freq: 520 + n * 40,
+            freqEnd: 1040 + n * 80,
+            type: "triangle",
+            dur: 0.11 + n * 0.02,
+            gain: 0.038 + n * 0.005,
             delay: 0.05,
+            attack: 0.003,
           });
         }
+
         if (n >= 3) {
           tone({
-            freq: 780,
-            freqEnd: 1560,
-            type: "triangle",
-            dur: 0.2,
-            gain: 0.036,
-            delay: 0.07,
-          });
-        }
-        if (n >= 4) {
-          tone({
-            freq: 440,
-            freqEnd: 1760,
+            freq: 660,
+            freqEnd: 1320,
             type: "sine",
-            dur: 0.26,
-            gain: 0.04,
+            dur: 0.14,
+            gain: 0.038,
             delay: 0.09,
+            attack: 0.004,
+          });
+          noise({
+            dur: 0.08,
+            gain: 0.028,
+            delay: 0.07,
+            freq: 1800,
+            type: "highpass",
+            q: 0.6,
           });
         }
-      },
-      reject() {
-        tone({ freq: 220, freqEnd: 130, type: "square", dur: 0.09, gain: 0.028 });
-        tone({ freq: 160, freqEnd: 100, type: "triangle", dur: 0.1, gain: 0.02, delay: 0.02 });
-      },
-      gameOver() {
-        tone({ freq: 392, freqEnd: 196, type: "triangle", dur: 0.22, gain: 0.05 });
-        tone({ freq: 311, freqEnd: 155, type: "sine", dur: 0.28, gain: 0.04, delay: 0.12 });
-        tone({ freq: 247, freqEnd: 98, type: "triangle", dur: 0.38, gain: 0.045, delay: 0.26 });
-        noise({ dur: 0.2, gain: 0.025, delay: 0.08, freq: 400, type: "lowpass", q: 0.4 });
-      },
-      click() {
-        tone({ freq: 740, type: "sine", dur: 0.04, gain: 0.03 });
-        tone({ freq: 980, type: "triangle", dur: 0.05, gain: 0.02, delay: 0.02 });
-      },
-      refill() {
-        for (let i = 0; i < 3; i++) {
+
+        if (n >= 4) {
+          thud({ freq: 70, dur: 0.14, gain: 0.09, delay: 0.02 });
           tone({
-            freq: 560 + i * 110,
-            type: "sine",
-            dur: 0.07,
-            gain: 0.024,
-            delay: i * 0.055,
+            freq: 880,
+            freqEnd: 1760,
+            type: "triangle",
+            dur: 0.18,
+            gain: 0.04,
+            delay: 0.12,
             attack: 0.004,
           });
         }
+
+        // Серия: один свист-взлёт (выше с каждой ×), не лесенка монеток
+        if (s >= 2) {
+          const step = s - 2;
+          const root = 480 + step * 70;
+          const delay = 0.075 + n * 0.01;
+          tone({
+            freq: root,
+            freqEnd: root * (1.75 + step * 0.06),
+            type: "sine",
+            dur: 0.11 + step * 0.014,
+            gain: 0.04,
+            delay,
+            attack: 0.002,
+            curve: "linear",
+          });
+          tone({
+            freq: root * 1.5,
+            freqEnd: root * 1.72,
+            type: "triangle",
+            dur: 0.09 + step * 0.01,
+            gain: 0.026,
+            delay: delay + 0.028,
+            attack: 0.003,
+            curve: "linear",
+          });
+          if (s >= 4) {
+            tone({
+              freq: root * 2.05,
+              freqEnd: root * 2.2,
+              type: "sine",
+              dur: 0.07,
+              gain: 0.028,
+              delay: delay + 0.055,
+              attack: 0.001,
+            });
+          }
+          if (s >= 6) {
+            noise({
+              dur: 0.06,
+              gain: 0.022,
+              delay: delay + 0.04,
+              freq: 2400 + step * 100,
+              type: "bandpass",
+              q: 1.4,
+            });
+          }
+        }
+      },
+      reject() {
+        tone({ freq: 210, freqEnd: 120, type: "triangle", dur: 0.09, gain: 0.045 });
+      },
+      gameOver() {
+        tone({ freq: 330, freqEnd: 165, type: "triangle", dur: 0.28, gain: 0.055 });
+        tone({ freq: 247, freqEnd: 110, type: "sine", dur: 0.36, gain: 0.045, delay: 0.14 });
+      },
+      click() {
+        tone({ freq: 820, type: "sine", dur: 0.035, gain: 0.04, attack: 0.002 });
+      },
+      refill() {
+        tone({ freq: 640, type: "sine", dur: 0.06, gain: 0.035, attack: 0.004 });
+        tone({
+          freq: 820,
+          type: "sine",
+          dur: 0.07,
+          gain: 0.028,
+          delay: 0.06,
+          attack: 0.004,
+        });
       },
     };
   })();
@@ -632,12 +669,6 @@
     sideValue.style.color = "";
   }
 
-  function refreshContinueBtn() {
-    const saved = loadSave();
-    if (saved) continueBtn.classList.remove("hidden");
-    else continueBtn.classList.add("hidden");
-  }
-
   function refreshMenuBests() {
     document.querySelectorAll("[data-best]").forEach((el) => {
       const best = loadBest();
@@ -714,7 +745,6 @@
     appEl.classList.remove("ending");
     menuEl.classList.remove("hidden");
     updateSettingsUI();
-    refreshContinueBtn();
     refreshMenuBests();
   }
 
@@ -774,6 +804,20 @@
     return filled / (SIZE * SIZE);
   }
 
+  function isStraightLine(shape) {
+    const cells = shapeCells(shape);
+    if (cells.length <= 1) return true;
+    let sameRow = true;
+    let sameCol = true;
+    const r0 = cells[0][0];
+    const c0 = cells[0][1];
+    for (const [r, c] of cells) {
+      if (r !== r0) sameRow = false;
+      if (c !== c0) sameCol = false;
+    }
+    return sameRow || sameCol;
+  }
+
   function clearScoreAt(shape, row, col) {
     if (!canPlace(shape, row, col)) return 0;
     const preview = previewClears(shape, row, col);
@@ -793,6 +837,53 @@
     return best;
   }
 
+  /** Помощь: сильнее тянем к почти готовым линиям. */
+  function bestAssistScore(shape) {
+    let best = 0;
+    const h = shape.length;
+    const w = shape[0].length;
+    for (let r = 0; r <= SIZE - h; r++) {
+      for (let c = 0; c <= SIZE - w; c++) {
+        if (!canPlace(shape, r, c)) continue;
+        const fill = new Set();
+        for (const [sr, sc] of shapeCells(shape)) fill.add(`${r + sr},${c + sc}`);
+
+        const scoreLine = (pre, count, touched) => {
+          if (!touched || count >= SIZE || pre < 1) return;
+          let score = count * count;
+          if (pre >= 5) score += 50;
+          else if (pre >= 4) score += 28;
+          else if (pre >= 3) score += 12;
+          if (score > best) best = score;
+        };
+
+        for (let row = 0; row < SIZE; row++) {
+          let pre = 0;
+          let count = 0;
+          let touched = false;
+          for (let col = 0; col < SIZE; col++) {
+            if (state.grid[row][col]) pre += 1;
+            if (state.grid[row][col] || fill.has(`${row},${col}`)) count += 1;
+            if (fill.has(`${row},${col}`)) touched = true;
+          }
+          scoreLine(pre, count, touched);
+        }
+        for (let col = 0; col < SIZE; col++) {
+          let pre = 0;
+          let count = 0;
+          let touched = false;
+          for (let row = 0; row < SIZE; row++) {
+            if (state.grid[row][col]) pre += 1;
+            if (state.grid[row][col] || fill.has(`${row},${col}`)) count += 1;
+            if (fill.has(`${row},${col}`)) touched = true;
+          }
+          scoreLine(pre, count, touched);
+        }
+      }
+    }
+    return best;
+  }
+
   function pickWeightedShape(entries) {
     const total = entries.reduce((s, e) => s + e.w, 0);
     if (total <= 0) return SHAPES[0].shape;
@@ -804,26 +895,63 @@
     return entries[entries.length - 1].shape;
   }
 
+  function clearingPool() {
+    const pool = [];
+    for (const entry of SHAPES) {
+      const score = bestClearScore(entry.shape);
+      if (score <= 0) continue;
+      const cells = shapeCells(entry.shape).length;
+      // Чуть чаще маленькие фигуры под клир — проще заметить
+      const sizeBonus = cells <= 3 ? 1.4 : cells <= 5 ? 1.1 : 0.9;
+      pool.push({ shape: entry.shape, w: entry.w * score * score * score * sizeBonus });
+    }
+    return pool;
+  }
+
+  function assistPool() {
+    const pool = [];
+    for (const entry of SHAPES) {
+      const score = bestAssistScore(entry.shape);
+      if (score < 18) continue;
+      pool.push({ shape: entry.shape, w: entry.w * score * score });
+    }
+    return pool;
+  }
+
+  function starterPool() {
+    return SHAPES.map((entry) => {
+      const cells = shapeCells(entry.shape).length;
+      let w = entry.w;
+      if (isStraightLine(entry.shape) && cells >= 3) w *= 0.35;
+      else if (isStraightLine(entry.shape)) w *= 0.55;
+      else if (cells === 1) w *= 0.4;
+      else w *= 1.25;
+      return { shape: entry.shape, w };
+    });
+  }
+
   function randomPiece(options = {}) {
     const preferClear = !!options.preferClear;
     const requirePlaceable = !!options.requirePlaceable;
+    const starter = !!options.starter;
 
     if (preferClear) {
-      const clearing = [];
-      for (const entry of SHAPES) {
-        const score = bestClearScore(entry.shape);
-        if (score <= 0) continue;
-        // Сильнее тянем к фигурам, которые реально ломают (и лучше — несколько линий)
-        clearing.push({ shape: entry.shape, w: entry.w * score * score });
-      }
+      const clearing = clearingPool();
       if (clearing.length) {
         const piece = pieceFromShape(pickWeightedShape(clearing));
         if (!requirePlaceable || anyPlacement(piece)) return piece;
       }
+
+      const assisting = assistPool();
+      if (assisting.length) {
+        const piece = pieceFromShape(pickWeightedShape(assisting));
+        if (!requirePlaceable || anyPlacement(piece)) return piece;
+      }
     }
 
+    const pool = starter ? starterPool() : SHAPES;
     for (let attempt = 0; attempt < 28; attempt++) {
-      const shape = pickWeightedShape(SHAPES);
+      const shape = pickWeightedShape(pool);
       const piece = pieceFromShape(shape);
       if (!requirePlaceable || anyPlacement(piece)) return piece;
     }
@@ -838,23 +966,32 @@
   function refillPieces() {
     if (!state.pieces.every((p) => !p)) return false;
 
-    // Как в Block Blast: чем плотнее поле, тем чаще даём фигуру «под ломание»
     const fill = boardFillRatio();
-    const help1 = fill > 0.4 ? 0.82 : fill > 0.22 ? 0.68 : 0.42;
-    const help2 = fill > 0.4 ? 0.55 : fill > 0.22 ? 0.38 : 0.22;
+    const canClearNow = clearingPool().length > 0;
+    // Разнообразие только на совсем пустом поле; иначе всегда тянем к ломанию
+    const early = fill < 0.07 && !canClearNow;
 
-    const a =
-      Math.random() < help1
-        ? randomPiece({ preferClear: true, requirePlaceable: true })
-        : randomPiece({ requirePlaceable: true });
-    const b =
-      Math.random() < help2
-        ? randomPiece({ preferClear: true, requirePlaceable: true })
-        : randomPiece({ requirePlaceable: true });
-    // Третья — разнообразие, но чаще всё же ставится
-    const c = randomPiece({ requirePlaceable: Math.random() < 0.75 });
-
-    state.pieces = [a, b, c];
+    if (canClearNow) {
+      // Есть клир — все три фигуры умеют ломать
+      state.pieces = [
+        randomPiece({ preferClear: true, requirePlaceable: true }),
+        randomPiece({ preferClear: true, requirePlaceable: true }),
+        randomPiece({ preferClear: true, requirePlaceable: true }),
+      ];
+    } else if (early) {
+      state.pieces = [
+        randomPiece({ starter: true, requirePlaceable: true }),
+        randomPiece({ starter: true, requirePlaceable: true }),
+        randomPiece({ starter: true, requirePlaceable: true }),
+      ];
+    } else {
+      // Подводим линии к клиру
+      state.pieces = [
+        randomPiece({ preferClear: true, requirePlaceable: true }),
+        randomPiece({ preferClear: true, requirePlaceable: true }),
+        randomPiece({ preferClear: true, requirePlaceable: true }),
+      ];
+    }
 
     if (!state.pieces.some((p) => anyPlacement(p))) {
       state.pieces[0] = randomPiece({ preferClear: true, requirePlaceable: true });
@@ -1007,7 +1144,6 @@
     state.paused = false;
     pauseOverlay.classList.add("hidden");
     clearSave();
-    refreshContinueBtn();
 
     if (state.drag) {
       clearDragGhost();
@@ -1488,13 +1624,14 @@
       placePiece(piece, preview.row, preview.col);
       state.pieces[index] = null;
       const result = clearLines();
+      let didClear = false;
       if (result.points) {
         state.streak += 1;
         if (state.streak > state.runBestStreak) state.runBestStreak = state.streak;
         const streakBonus = state.streak >= 2 ? (state.streak - 1) * STREAK_BONUS : 0;
         const totalPoints = result.points + streakBonus + PLACE_POINTS;
         spawnClearFx(result.cells);
-        sfx.clear(result.lines + Math.max(0, state.streak - 1));
+        sfx.clear(result.lines, state.streak);
         haptics.clear(result.lines + Math.max(0, state.streak - 1));
         addScore(totalPoints);
         updateComboUI();
@@ -1502,6 +1639,7 @@
         showFloatScore(totalPoints, result.lines, state.streak, mid.r, mid.c);
         if (result.lines >= 2 || state.streak >= 3) shakeBoard(true);
         else shakeBoard(false);
+        didClear = true;
       } else {
         state.streak = 0;
         updateComboUI();
@@ -1510,7 +1648,8 @@
         addScore(PLACE_POINTS);
       }
       const refilled = refillPieces();
-      if (refilled) sfx.refill();
+      // Не накладывать refill поверх clear — звучит грязно
+      if (refilled && !didClear) sfx.refill();
       renderTray(refilled);
       saveGame();
       if (!state.gameOver && checkGameOver()) endGame();
@@ -1677,7 +1816,8 @@
     e.preventDefault();
     sfx.unlock();
     sfx.click();
-    saveGame();
+    // Выход в меню = сдаться; сохранение только при закрытии приложения во время катки
+    clearSave();
     showMenu();
   });
 
@@ -1723,13 +1863,6 @@
     });
   }
 
-  continueBtn.addEventListener("click", () => {
-    sfx.unlock();
-    sfx.click();
-    const saved = loadSave();
-    if (saved) resetGame(saved);
-  });
-
   window.addEventListener(
     "pointerdown",
     () => {
@@ -1760,6 +1893,8 @@
   });
 
   updateSettingsUI();
-  showMenu();
+  const bootSave = loadSave();
+  if (bootSave) resetGame(bootSave);
+  else showMenu();
   requestAnimationFrame(tick);
 })();
