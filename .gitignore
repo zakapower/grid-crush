@@ -5,3 +5,7 @@ android-app/keystore/*.keystore
 android-app/.gradle/
 android-app/**/build/
 *.apk
+
+# RuStore capture tooling
+store/node_modules/
+
