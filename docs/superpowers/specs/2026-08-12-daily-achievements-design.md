@@ -1,108 +1,108 @@
-# Daily Challenge + Achievements — Design Spec
+# Дейлик + достижения — дизайн-спека
 
-**Date:** 2026-08-12  
-**Product:** Grid Crush  
-**Goal:** Retention via a simple local daily run and a small achievements list — no leaderboards/backend.
+**Дата:** 2026-08-12  
+**Продукт:** Grid Crush  
+**Цель:** Удержание через локальный режим «На сегодня» и список достижений — без лидербордов и бэкенда.
 
-## Decisions
+## Решения
 
-| Topic | Choice |
-|--------|--------|
-| Daily | **B** — «На сегодня»: same classic gameplay; track best score for the local calendar day |
-| Seeded shared start | No (no leaderboard) |
-| Achievements count | 9 |
-| Daily streak achievement | **3 consecutive calendar days** with at least one daily attempt |
-| UI approach | Menu CTAs + trophy overlay |
-| Storage | `localStorage` only |
-| Classic autosave | Unchanged; daily does not use classic autosave resume |
+| Тема | Выбор |
+|------|--------|
+| Дейлик | **B** — «На сегодня»: тот же классический геймплей; отдельно лучший счёт за локальный календарный день |
+| Общий сид на день | Нет (лидерборда нет) |
+| Число ачивок | 9 |
+| Ачивка по дейлику | **3 календарных дня подряд** с хотя бы одной попыткой дейлика |
+| UI | Кнопки в меню + оверлей трофеев |
+| Хранение | Только `localStorage` |
+| Автосейв классики | Без изменений; дейлик классический автосейв не перехватывает |
 
-## Menu
+## Меню
 
-- Keep hero composition (title, mini-grid, record, background).
-- Primary: **Играть** → classic (existing `startMode` / autosave behavior).
-- Secondary: **На сегодня** → start a daily run of classic rules.
-- Under daily button: `Сегодня · N` or `Сегодня · —` if no score today.
-- Trophy icon button (corner or near settings) opens achievements overlay.
-- Settings gear unchanged.
+- Сохраняем hero (название, мини-сетка, рекорд, фон).
+- **Играть** → классика (как сейчас: `startMode` / автосейв).
+- **На сегодня** → запуск дейлика по правилам классики.
+- Под кнопкой дейлика: `Сегодня · N` или `Сегодня · —`, если ещё не играли.
+- Иконка трофея (угол или рядом с настройками) открывает оверлей достижений.
+- Шестерёнка настроек без изменений.
 
-## Daily challenge
+## Дейлик
 
-### Rules
-- Same board, pieces, scoring, clears, streaks as classic.
-- Local calendar day key: `YYYY-MM-DD` from device local timezone.
-- Persist `dailyBest` for the current day; at day change, previous day best is not shown (only current day).
-- On daily game over (or when a run’s score is finalized): if score > today’s best, update today’s best.
-- Playing daily counts as an “attempt” for the day for streak tracking (even if score is 0), once per day is enough to mark the day.
+### Правила
+- Те же поле, фигуры, очки, клиры и серии, что в классике.
+- Ключ дня: `YYYY-MM-DD` по локальному времени устройства.
+- Храним `dailyBest` за текущий день; на следующий день показываем уже новый день (вчерашний best в UI не светим).
+- В конце дейлик-партии (game over): если счёт > лучшего за сегодня — обновляем.
+- Первая попытка дейлика в этот день засчитывается для стрика дней (даже при счёте 0).
 
-### Autosave
-- Classic autosave / auto-resume on app open stays as today.
-- Daily runs do **not** hijack classic autosave. If the player leaves a daily mid-run via «В меню», discard daily progress (no daily continue). Closing the app mid-daily may either discard or ignore daily resume — **spec: no resume for daily**; only classic resumes.
+### Автосейв
+- Автосейв / автопродолжение классики при открытии приложения — как сейчас.
+- Дейлик **не** использует продолжение: выход «В меню» сбрасывает незавершённый дейлик. Закрытие приложения mid-daily тоже **без** resume дейлика; resume только у классики.
 
-### Pause / menu
-- Pause «В меню» during daily → clear any ephemeral daily state, back to menu (same as abandoning).
-- Game over → show score; if new daily best, hint in UI (e.g. subtitle or small label «Рекорд дня»).
+### Пауза / меню
+- Пауза → «В меню» в дейлике → в меню, прогресс дейлика не продолжаем.
+- Game over → счёт; при новом рекорде дня — пометка вроде «Рекорд дня».
 
-## Achievements (9)
+## Достижения (9)
 
-Stored as progress + unlocked flags. Unlock when condition first met; show brief toast/badge.
+Прогресс и флаги разблокировки в `localStorage`. При первом выполнении — короткий тост.
 
-| id | Title (RU) | Condition | Progress type |
-|----|------------|-----------|---------------|
-| `score_1k` | Первая тысяча | Score ≥ 1000 in one run | boolean / best |
-| `score_5k` | Разгон | Score ≥ 5000 in one run | boolean / best |
-| `streak_5` | В ударе | Combo streak ≥ 5 | boolean / best |
-| `streak_10` | Не останавливайся | Combo streak ≥ 10 | boolean / best |
-| `multi_3` | Тройной удар | ≥ 3 lines in one clear | boolean / best |
-| `multi_4` | Четверной | ≥ 4 lines in one clear | boolean / best |
-| `games_10` | Разминаемся | 10 finished games (classic + daily) | counter / 10 |
-| `games_50` | Завсегдатай | 50 finished games | counter / 50 |
-| `daily_streak_3` | Три дня подряд | Daily attempted on 3 consecutive calendar days | streak / 3 |
+| id | Название | Условие | Прогресс |
+|----|----------|---------|----------|
+| `score_1k` | Первая тысяча | Счёт ≥ 1000 за партию | флаг / лучший |
+| `score_5k` | Разгон | Счёт ≥ 5000 за партию | флаг / лучший |
+| `streak_5` | В ударе | Серия ×5 | флаг / лучший |
+| `streak_10` | Не останавливайся | Серия ×10 | флаг / лучший |
+| `multi_3` | Тройной удар | ≥ 3 линии за один ход | флаг / лучший |
+| `multi_4` | Четверной | ≥ 4 линии за один ход | флаг / лучший |
+| `games_10` | Разминаемся | 10 оконченных партий (классика + дейлик) | счётчик / 10 |
+| `games_50` | Завсегдатай | 50 оконченных партий | счётчик / 50 |
+| `daily_streak_3` | Три дня подряд | Дейлик в 3 календарных дня подряд | стрик / 3 |
 
-### Tracking notes
-- Finished game = game over screen shown (not abandon to menu).
-- Streak/line achievements update live during a run (and on game over).
-- `daily_streak_3`: maintain `lastDailyDate` + `dailyStreakCount`. On first daily attempt of a day: if yesterday → increment; if today already counted → no-op; else → reset to 1.
-- Achievements apply in both classic and daily unless noted (`daily_streak_3` only from daily).
+### Учёт
+- Оконченная партия = показан экран game over (не уход в меню).
+- Серия и мульти-линии обновляются в процессе партии и на game over.
+- `daily_streak_3`: поля `lastDailyDate` + `dailyStreakCount`. При первой попытке дейлика за день: если вчера — +1; если уже сегодня учли — ничего; иначе — сброс на 1.
+- Ачивки считаются в классике и дейлике, кроме `daily_streak_3` (только дейлик).
 
-## Achievements UI
+## UI достижений
 
-- Overlay modal (like settings/pause): title «Достижения», scrollable list.
-- Each row: title, short condition, progress (`3/10` or checkmark when done).
-- Locked/unlocked visual difference (opacity or check).
-- Close via X / backdrop tap.
-- Unlock toast: small non-blocking banner ~2s («Достижение: …»).
+- Оверлей (как настройки/пауза): заголовок «Достижения», прокручиваемый список.
+- Строка: название, короткое условие, прогресс (`3/10` или галочка).
+- Отличие открыто / закрыто (прозрачность или галочка).
+- Закрытие: крестик / тап по фону.
+- Тост ~2 с: «Достижение: …».
 
-## Data (localStorage keys — illustrative)
+## Данные (ключи localStorage — ориентир)
 
 - `blockBlastDaily_v1`: `{ date, best }`
 - `blockBlastDailyStreak_v1`: `{ lastDate, streak }`
 - `blockBlastAchievements_v1`: `{ unlocked: {}, progress: {}, gamesFinished }`
-- Existing classic save/best keys unchanged.
+- Ключи классики (сейв/рекорд) не трогаем.
 
-## Files
+## Файлы
 
-- `www/index.html` — menu buttons, achievements overlay, toast
-- `www/style.css` — styles
-- `www/game.js` — daily mode flag, persistence, achievement hooks
-- Mirror: `android-app/app/src/main/assets/www/*`
+- `www/index.html` — кнопки меню, оверлей ачивок, тост
+- `www/style.css` — стили
+- `www/game.js` — флаг дейлика, хранение, хуки ачивок
+- Зеркало: `android-app/app/src/main/assets/www/*`
 
-## Out of scope
+## Вне скоупа
 
-- Online leaderboards / Play Games
-- Seeded shared daily boards
-- Rewards/skins/currency
-- Cloud sync
-- Notifications reminding to play daily
+- Онлайн-лидерборды / Play Games
+- Общий сид на день
+- Награды / скины / валюта
+- Облачный синк
+- Пуши «зайди в дейлик»
 
-## Success criteria
+## Критерии успеха
 
-- Player can start classic and daily from menu
-- Today’s best updates and resets next local day
-- 9 achievements track correctly and persist across restarts
-- Daily 3-day streak increments only on consecutive days
-- Classic autosave behavior unchanged
-- No network required
+- Из меню стартуют классика и дейлик
+- Лучший счёт «сегодня» обновляется и сбрасывается на новый локальный день
+- 9 ачивок корректно копятся и переживают перезапуск
+- Стрик дейлика растёт только при днях подряд
+- Поведение автосейва классики не ломается
+- Сеть не нужна
 
-## Rollback
+## Откат
 
-Revert menu/overlay/JS persistence for daily + achievements.
+Откатить правки меню/оверлея/JS по дейлику и достижениям.

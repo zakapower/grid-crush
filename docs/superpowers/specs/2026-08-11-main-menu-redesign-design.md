@@ -1,69 +1,71 @@
-# Main Menu Redesign — Design Spec
+# Редизайн главного меню — дизайн-спека
 
-**Date:** 2026-08-11  
-**Product:** Grid Crush  
-**Goal:** Make the main menu feel more game-like (premium puzzle), while keeping a simple Play / Continue flow. Easy to roll back.
+**Дата:** 2026-08-11  
+**Продукт:** Grid Crush  
+**Цель:** Сделать главное меню более «игровым» (premium puzzle) при простой схеме старта. Легко откатить.
 
-## Decisions
+> Примечание: позже кнопка «Продолжить» убрана в пользу автопродолжения классики при открытии приложения. Ниже — исходные решения на момент этой спеки.
 
-| Topic | Choice |
-|--------|--------|
-| Feel | Premium puzzle — calm, confident, not neon arcade |
-| Structure | Hero + CTA |
-| Start | One primary **Играть** → classic mode |
-| Continue | Shown only when a save exists |
-| Modes UI | Remove mode card list (classic is the only path) |
-| Themes | Keep existing dark/light CSS variables |
-| Scope | Menu presentation only; game logic, save, settings unchanged |
+## Решения
 
-## Screen layout (top → bottom)
+| Тема | Выбор |
+|------|--------|
+| Вайб | Premium puzzle — спокойно, уверенно, не неон-аркада |
+| Структура | Hero + CTA |
+| Старт | Одна основная **Играть** → классика |
+| Продолжить | Только если есть сохранение |
+| UI режимов | Убрать список карточек режимов (путь один — классика) |
+| Темы | Оставить текущие CSS-переменные dark/light |
+| Скоуп | Только оформление меню; логика игры, сейв, настройки без изменений |
 
-1. Settings gear — top-right corner (unchanged behavior)
-2. Brand hero — large **Grid Crush** title
-3. Soft mini grid — small cluster of colored blocks with idle motion
-4. Record line — `Рекорд · N` (or em dash if no best)
-5. Primary CTA — **Играть** (starts classic / `startMode`)
-6. Secondary CTA — **Продолжить** (visible only with save)
+## Раскладка экрана (сверху вниз)
 
-First viewport = one composition: brand, short supporting record line, CTA group, one visual anchor (mini grid). No mode cards, no secondary marketing blocks.
+1. Шестерёнка настроек — правый верхний угол (поведение как было)
+2. Бренд-герой — крупный заголовок **Grid Crush**
+3. Мягкая мини-сетка — кластер цветных блоков с idle-анимацией
+4. Строка рекорда — `Рекорд · N` (или тире, если рекорда нет)
+5. Основной CTA — **Играть** (старт классики / `startMode`)
+6. Вторичный CTA — **Продолжить** (видна только при сейве)
 
-## Visual & motion
+Первый экран = одна композиция: бренд, короткая строка рекорда, группа CTA, один визуальный якорь (мини-сетка). Без карточек режимов и вторичного маркетинга.
 
-- Background: existing gradient; optional very subtle cell drift (no neon glow).
-- Mini grid: 4–6 colored blocks; every ~2–3s one gently lifts / soft-pops and returns.
-- Buttons: large touch targets; primary uses existing blue CTA gradient; light press-scale.
-- Menu enter: short fade / slide-up (~0.4s).
-- `prefers-reduced-motion: reduce` — disable or greatly simplify idle and enter animations.
+## Визуал и motion
 
-## Behavior (wire to existing APIs)
+- Фон: текущий градиент; опционально едва заметный drift клеток (без неона).
+- Мини-сетка: 4–6 цветных блоков; раз в ~2–3 с один мягко поднимается / soft-pop и возвращается.
+- Кнопки: крупные тач-зоны; основная — синий CTA-градиент; лёгкий press-scale.
+- Вход в меню: короткий fade / slide-up (~0.4 с).
+- `prefers-reduced-motion: reduce` — отключить или сильно упростить idle и вход.
 
-- **Играть** → same as current mode button: unlock SFX, click, `startMode()` / `resetGame(null)`.
-- **Продолжить** → existing `continue-btn` + `loadSave()` / `resetGame(saved)`.
-- Record → existing `refreshMenuBests()` / `loadBest()`, via `[data-best]` (or equivalent single element).
-- Settings overlay — unchanged.
+## Поведение (к существующим API)
 
-## Files
+- **Играть** → как бывшая кнопка режима: unlock SFX, click, `startMode()` / `resetGame(null)`.
+- **Продолжить** → `continue-btn` + `loadSave()` / `resetGame(saved)`.
+- Рекорд → `refreshMenuBests()` / `loadBest()`, через `[data-best]` (или один элемент).
+- Оверлей настроек — без изменений.
 
-- Primary: `www/index.html`, `www/style.css`, `www/game.js`
-- Mirror if the project keeps Android WebView assets in sync: `android-app/app/src/main/assets/www/*`
+## Файлы
 
-## Out of scope
+- Основное: `www/index.html`, `www/style.css`, `www/game.js`
+- Зеркало WebView: `android-app/app/src/main/assets/www/*`
 
-- New game modes
-- Changes to in-game HUD, pause, game over
-- New settings options
-- Sound redesign
-- Marketing / store screens
+## Вне скоупа
 
-## Success criteria
+- Новые режимы игры
+- Правки HUD / паузы / game over
+- Новые пункты настроек
+- Редизайн звука
+- Маркетинговые / стор-экраны
 
-- Menu reads as a game title screen, not a settings list
-- One-tap start into classic
-- Continue still works when a save exists
-- Dark/light themes still look coherent
-- Reduced-motion users get a calm static (or near-static) menu
-- Rollback is straightforward (revert HTML/CSS/JS menu changes)
+## Критерии успеха
 
-## Rollback
+- Меню читается как титульный экран игры, а не список настроек
+- Один тап — старт классики
+- «Продолжить» работает при наличии сейва
+- Тёмная и светлая темы выглядят цельно
+- При reduced-motion меню спокойное, почти без анимации
+- Откат простой (revert HTML/CSS/JS меню)
 
-Revert the menu-related diffs in the files above (or revert the feature commit). No schema/migration involved.
+## Откат
+
+Откатить меню-диффы в файлах выше (или feature-коммит). Миграций схемы нет.
