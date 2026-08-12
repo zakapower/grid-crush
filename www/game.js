@@ -12,7 +12,7 @@
 
   // Набор как в Block Blast: линии, квадраты, прямоугольники, L/T/S (все ориентации отдельно).
   const SHAPES = [
-    { w: 10, shape: [[1]] },
+    { w: 4, shape: [[1]] },
     { w: 8, shape: [[1, 1]] },
     { w: 8, shape: [[1], [1]] },
     { w: 7, shape: [[1, 1, 1]] },
@@ -72,6 +72,12 @@
   const comboLabel = document.getElementById("combo-label");
   const restartBtn = document.getElementById("restart");
   const toMenuBtn = document.getElementById("to-menu");
+  const reviveBtn = document.getElementById("revive-btn");
+  const reviveTimerEl = document.getElementById("revive-timer");
+  const reviveOverlay = document.getElementById("revive-overlay");
+  const reviveSkipBtn = document.getElementById("revive-skip-btn");
+  const reviveRingFg = document.getElementById("revive-ring-fg");
+  const REVIVE_RING_LEN = 326.7;
   const pauseBtn = document.getElementById("pause-btn");
   const pauseOverlay = document.getElementById("pause-overlay");
   const resumeBtn = document.getElementById("resume-btn");
@@ -83,71 +89,277 @@
   const settingsOverlay = document.getElementById("settings-overlay");
   const settingsSoundBtn = document.getElementById("settings-sound-btn");
   const settingsVibroBtn = document.getElementById("settings-vibro-btn");
-  const settingsThemeBtn = document.getElementById("settings-theme-btn");
   const settingsCloseBtn = document.getElementById("settings-close-btn");
 
   const SAVE_KEY = "blockBlastSave_v2";
   const BEST_KEY = "blockBlastBest_classic";
   const MUTE_KEY = "blockBlastMuted";
   const VIBRO_KEY = "blockBlastVibro";
-  const THEME_KEY = "blockBlastTheme";
+  const DAILY_KEY = "blockBlastDaily_v1";
+  const DAILY_STREAK_KEY = "blockBlastDailyStreak_v1";
+  const ACH_KEY = "blockBlastAchievements_v1";
   const STREAK_BONUS = 40;
   const PLACE_POINTS = 2;
-  const MASTER_VOLUME = 2.6;
+  const MASTER_VOLUME = 6.5;
 
-  const theme = (() => {
-    let current = "dark";
+  const dailyBestLabel = document.getElementById("daily-best-label");
+  const dailyBtn = document.getElementById("daily-btn");
+  const achievementsBtn = document.getElementById("achievements-btn");
+  const achievementsOverlay = document.getElementById("achievements-overlay");
+  const achievementsList = document.getElementById("achievements-list");
+  const achievementsCloseBtn = document.getElementById("achievements-close-btn");
+  const achToast = document.getElementById("ach-toast");
+  const dailyRecordBadge = document.getElementById("daily-record-badge");
+
+  const ACHIEVEMENTS = [
+    { id: "score_1k", title: "Первая тысяча", desc: "Набери 1000 очков за партию", target: 1000, tone: "blue", mark: "1K" },
+    { id: "score_5k", title: "Разгон", desc: "Набери 5000 очков за партию", target: 5000, tone: "cyan", mark: "5K" },
+    { id: "streak_5", title: "В ударе", desc: "Серия ×5", target: 5, tone: "amber", mark: "×5" },
+    { id: "streak_10", title: "Не останавливайся", desc: "Серия ×10", target: 10, tone: "orange", mark: "×10" },
+    { id: "multi_3", title: "Тройной удар", desc: "Сломай 3 линии за один ход", target: 3, tone: "pink", mark: "3×" },
+    { id: "multi_4", title: "Четверной", desc: "Сломай 4 линии за один ход", target: 4, tone: "violet", mark: "4×" },
+    { id: "games_10", title: "Разминаемся", desc: "Окончи 10 партий", target: 10, tone: "green", mark: "10" },
+    { id: "games_50", title: "Завсегдатай", desc: "Окончи 50 партий", target: 50, tone: "mint", mark: "50" },
+    { id: "daily_streak_3", title: "Три дня подряд", desc: "Заходи в дейлик 3 дня подряд", target: 3, tone: "sky", mark: "3д" },
+  ];
+
+  const achievementsCountEl = document.getElementById("achievements-count");
+
+  function localDateKey(d = new Date()) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function shiftDateKey(key, deltaDays) {
+    const [y, m, d] = key.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + deltaDays);
+    return localDateKey(dt);
+  }
+
+  function loadDaily() {
     try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === "light" || saved === "dark") current = saved;
+      const raw = localStorage.getItem(DAILY_KEY);
+      if (!raw) return { date: localDateKey(), best: 0 };
+      const data = JSON.parse(raw);
+      const today = localDateKey();
+      if (!data || data.date !== today) return { date: today, best: 0 };
+      return { date: today, best: Math.max(0, Number(data.best) || 0) };
     } catch (_) {
-      current = "dark";
+      return { date: localDateKey(), best: 0 };
     }
+  }
 
-    function apply() {
-      document.documentElement.setAttribute("data-theme", current);
+  function saveDaily(data) {
+    try {
+      localStorage.setItem(DAILY_KEY, JSON.stringify(data));
+    } catch (_) {
+      /* ignore */
     }
+  }
 
-    apply();
+  function loadDailyStreak() {
+    try {
+      const raw = localStorage.getItem(DAILY_STREAK_KEY);
+      if (!raw) return { lastDate: "", streak: 0 };
+      const data = JSON.parse(raw);
+      return {
+        lastDate: typeof data.lastDate === "string" ? data.lastDate : "",
+        streak: Math.max(0, Number(data.streak) || 0),
+      };
+    } catch (_) {
+      return { lastDate: "", streak: 0 };
+    }
+  }
 
-    return {
-      get() {
-        return current;
-      },
-      isLight() {
-        return current === "light";
-      },
-      set(value) {
-        current = value === "light" ? "light" : "dark";
-        try {
-          localStorage.setItem(THEME_KEY, current);
-        } catch (_) {
-          /* ignore */
-        }
-        apply();
-      },
-      toggle() {
-        this.set(current === "light" ? "dark" : "light");
-        return current;
-      },
-      boardColors() {
-        if (current === "light") {
-          return {
-            board: "#c5d0e0",
-            cellA: "#e8eef6",
-            cellB: "#dce5f0",
-            stroke: null,
-          };
-        }
-        return {
-          board: "#121f35",
-          cellA: "#1b2f4c",
-          cellB: "#162843",
-          stroke: null,
-        };
-      },
+  function saveDailyStreak(data) {
+    try {
+      localStorage.setItem(DAILY_STREAK_KEY, JSON.stringify(data));
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function loadAchievements() {
+    try {
+      const raw = localStorage.getItem(ACH_KEY);
+      if (!raw) {
+        return { unlocked: {}, progress: {}, gamesFinished: 0 };
+      }
+      const data = JSON.parse(raw);
+      return {
+        unlocked: data.unlocked && typeof data.unlocked === "object" ? data.unlocked : {},
+        progress: data.progress && typeof data.progress === "object" ? data.progress : {},
+        gamesFinished: Math.max(0, Number(data.gamesFinished) || 0),
+      };
+    } catch (_) {
+      return { unlocked: {}, progress: {}, gamesFinished: 0 };
+    }
+  }
+
+  function saveAchievements(data) {
+    try {
+      localStorage.setItem(ACH_KEY, JSON.stringify(data));
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  let achState = loadAchievements();
+  let achToastTimer = 0;
+  const achToastTitle = document.getElementById("ach-toast-title");
+
+  function showAchToast(title) {
+    if (!achToast || !achToastTitle) return;
+    achToastTitle.textContent = title;
+    window.clearTimeout(achToastTimer);
+    achToast.classList.remove("hidden", "is-hide");
+    // перезапуск enter-анимации
+    achToast.classList.remove("is-show");
+    void achToast.offsetWidth;
+    achToast.classList.add("is-show");
+    achToastTimer = window.setTimeout(() => {
+      achToast.classList.remove("is-show");
+      achToast.classList.add("is-hide");
+      achToastTimer = window.setTimeout(() => {
+        achToast.classList.add("hidden");
+        achToast.classList.remove("is-hide");
+      }, 320);
+    }, 2400);
+  }
+
+  function unlockAchievement(id) {
+    const def = ACHIEVEMENTS.find((a) => a.id === id);
+    if (!def || achState.unlocked[id]) return false;
+    achState.unlocked[id] = true;
+    saveAchievements(achState);
+    showAchToast(def.title);
+    renderAchievementsList();
+    return true;
+  }
+
+  function setAchProgress(id, value) {
+    const def = ACHIEVEMENTS.find((a) => a.id === id);
+    if (!def) return;
+    const next = Math.max(Number(achState.progress[id]) || 0, value);
+    achState.progress[id] = next;
+    if (next >= def.target) unlockAchievement(id);
+    else saveAchievements(achState);
+  }
+
+  function noteDailyAttempt() {
+    const today = localDateKey();
+    const streak = loadDailyStreak();
+    if (streak.lastDate === today) return streak.streak;
+    const yesterday = shiftDateKey(today, -1);
+    const next = {
+      lastDate: today,
+      streak: streak.lastDate === yesterday ? streak.streak + 1 : 1,
     };
-  })();
+    saveDailyStreak(next);
+    setAchProgress("daily_streak_3", next.streak);
+    return next.streak;
+  }
+
+  function refreshDailyLabel() {
+    if (!dailyBestLabel) return;
+    const daily = loadDaily();
+    dailyBestLabel.textContent = daily.best > 0 ? `Сегодня · ${daily.best}` : "Сегодня · —";
+  }
+
+  function renderAchievementsList() {
+    if (!achievementsList) return;
+    achievementsList.innerHTML = "";
+    let unlockedCount = 0;
+    for (const def of ACHIEVEMENTS) {
+      const unlocked = !!achState.unlocked[def.id];
+      if (unlocked) unlockedCount += 1;
+      let current = Number(achState.progress[def.id]) || 0;
+      if (def.id === "games_10" || def.id === "games_50") {
+        current = achState.gamesFinished;
+      }
+      if (def.id === "daily_streak_3") {
+        current = Math.max(current, loadDailyStreak().streak || 0);
+      }
+      const capped = Math.min(current, def.target);
+      const pct = Math.max(0, Math.min(100, Math.round((capped / def.target) * 100)));
+      const row = document.createElement("div");
+      row.className = "ach-row" + (unlocked ? " is-unlocked" : " is-locked");
+      row.innerHTML =
+        `<div class="ach-badge ach-badge--${def.tone}" aria-hidden="true">` +
+          `<span class="ach-badge-mark">${def.mark}</span>` +
+        `</div>` +
+        `<div class="ach-body">` +
+          `<div class="ach-title">${def.title}</div>` +
+          `<div class="ach-desc">${def.desc}</div>` +
+          `<div class="ach-bar" role="progressbar" aria-valuenow="${capped}" aria-valuemin="0" aria-valuemax="${def.target}">` +
+            `<div class="ach-bar-fill" style="width:${unlocked ? 100 : pct}%"></div>` +
+          `</div>` +
+        `</div>` +
+        `<div class="ach-meta">` +
+          (unlocked
+            ? `<span class="ach-check" aria-label="Открыто"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>`
+            : `<span class="ach-progress">${capped}/${def.target}</span>`) +
+        `</div>`;
+      achievementsList.appendChild(row);
+    }
+    if (achievementsCountEl) {
+      achievementsCountEl.textContent = `${unlockedCount} / ${ACHIEVEMENTS.length}`;
+    }
+  }
+
+  function openAchievements() {
+    renderAchievementsList();
+    achievementsOverlay.classList.remove("hidden");
+  }
+
+  function closeAchievements() {
+    achievementsOverlay.classList.add("hidden");
+  }
+
+  function trackRunAchievements() {
+    setAchProgress("score_1k", state.score);
+    setAchProgress("score_5k", state.score);
+    setAchProgress("streak_5", state.runBestStreak);
+    setAchProgress("streak_10", state.runBestStreak);
+  }
+
+  function trackClearAchievements(lines, streak) {
+    setAchProgress("multi_3", lines);
+    setAchProgress("multi_4", lines);
+    setAchProgress("streak_5", streak);
+    setAchProgress("streak_10", streak);
+  }
+
+  function trackGameFinished() {
+    achState.gamesFinished += 1;
+    setAchProgress("games_10", achState.gamesFinished);
+    setAchProgress("games_50", achState.gamesFinished);
+    saveAchievements(achState);
+    trackRunAchievements();
+  }
+
+  try {
+    localStorage.removeItem("blockBlastTheme");
+  } catch (_) {
+    /* ignore */
+  }
+  document.documentElement.removeAttribute("data-theme");
+
+  const boardColors = {
+    board: "#121f35",
+    cellA: "#1b2f4c",
+    cellB: "#162843",
+    stroke: null,
+  };
+
+  const theme = {
+    boardColors() {
+      return boardColors;
+    },
+  };
 
   const haptics = (() => {
     let enabled = true;
@@ -508,6 +720,10 @@
       click() {
         tone({ freq: 820, type: "sine", dur: 0.035, gain: 0.04, attack: 0.002 });
       },
+      /** Закрытие мини-оверлея (крестик / тап по фону) — один мягкий тон ниже click */
+      dismiss() {
+        tone({ freq: 420, freqEnd: 260, type: "sine", dur: 0.06, gain: 0.034, attack: 0.002, curve: "linear" });
+      },
       refill() {
         tone({ freq: 640, type: "sine", dur: 0.06, gain: 0.035, attack: 0.004 });
         tone({
@@ -589,6 +805,19 @@
   }
 
   function saveGame() {
+    if (state.isDaily) return;
+    if (state.screen !== "game" || state.gameOver || state.drag) return;
+    if (state._saveTimer) {
+      window.clearTimeout(state._saveTimer);
+    }
+    state._saveTimer = window.setTimeout(() => {
+      state._saveTimer = 0;
+      flushSaveGame();
+    }, 120);
+  }
+
+  function flushSaveGame() {
+    if (state.isDaily) return;
     if (state.screen !== "game" || state.gameOver || state.drag) return;
     try {
       const payload = {
@@ -636,6 +865,7 @@
 
   const state = {
     screen: "menu",
+    isDaily: false,
     grid: null,
     pieces: [null, null, null],
     score: 0,
@@ -643,13 +873,18 @@
     streak: 0,
     runBestStreak: 0,
     beatRecordThisRun: false,
+    beatDailyThisRun: false,
+    revivedThisRun: false,
     gameOver: false,
+    gameOverFinal: false,
     paused: false,
     drag: null,
     particles: [],
     placePulses: [],
     clearBursts: [],
     now: performance.now(),
+    boardDirty: true,
+    _saveTimer: 0,
   };
 
   state.grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
@@ -694,27 +929,9 @@
     settingsVibroBtn.title = label;
   }
 
-  function updateThemeUI() {
-    if (!settingsThemeBtn) return;
-    const light = theme.isLight();
-    settingsThemeBtn.classList.toggle("is-light", light);
-    const label = light ? "Тема: светлая" : "Тема: тёмная";
-    settingsThemeBtn.setAttribute("aria-label", label);
-    settingsThemeBtn.title = label;
-  }
-
   function updateSettingsUI() {
     updateSoundUI();
     updateVibroUI();
-    updateThemeUI();
-  }
-
-  function refreshThemeVisuals() {
-    if (state.screen === "game") {
-      paintTrayCanvases();
-      const preview = state.drag?.preview || null;
-      drawBoard(preview && preview.valid !== undefined ? preview : null);
-    }
   }
 
   function openSettings() {
@@ -727,9 +944,10 @@
   }
 
   function pauseMetaText() {
+    const mode = state.isDaily ? "На сегодня" : "Классика";
     const best = state.best > 0 ? state.best : loadBest();
     const bestPart = best > 0 ? ` · рекорд ${best}` : "";
-    return `Счёт ${state.score}${bestPart}`;
+    return `${mode} · счёт ${state.score}${bestPart}`;
   }
 
   function showMenu() {
@@ -741,11 +959,14 @@
     overlay.classList.add("hidden");
     pauseOverlay.classList.add("hidden");
     closeSettings();
+    closeAchievements();
+    hideReviveOffer();
     appEl.classList.add("hidden");
     appEl.classList.remove("ending");
     menuEl.classList.remove("hidden");
     updateSettingsUI();
     refreshMenuBests();
+    refreshDailyLabel();
   }
 
   function showGame() {
@@ -895,22 +1116,36 @@
     return entries[entries.length - 1].shape;
   }
 
-  function clearingPool() {
+  function isMonomino(shape) {
+    return shapeCells(shape).length === 1;
+  }
+
+  function weightedPool(entries, { avoidMono = false } = {}) {
+    return entries
+      .filter((entry) => !avoidMono || !isMonomino(entry.shape))
+      .map((entry) => ({ shape: entry.shape, w: entry.w }));
+  }
+
+  function clearingPool({ avoidMono = false } = {}) {
     const pool = [];
     for (const entry of SHAPES) {
+      if (avoidMono && isMonomino(entry.shape)) continue;
       const score = bestClearScore(entry.shape);
       if (score <= 0) continue;
       const cells = shapeCells(entry.shape).length;
-      // Чуть чаще маленькие фигуры под клир — проще заметить
-      const sizeBonus = cells <= 3 ? 1.4 : cells <= 5 ? 1.1 : 0.9;
+      // Кубик 1×1 не должен доминировать лоток «на грани проигрыша»
+      const sizeBonus = cells === 1 ? 0.15 : cells <= 3 ? 1.15 : cells <= 5 ? 1.05 : 0.95;
       pool.push({ shape: entry.shape, w: entry.w * score * score * score * sizeBonus });
     }
     return pool;
   }
 
-  function assistPool() {
+  function assistPool({ avoidMono = false } = {}) {
     const pool = [];
     for (const entry of SHAPES) {
+      // Одними кубиками дырки не «лечим» — это выглядит как читерство
+      if (isMonomino(entry.shape)) continue;
+      if (avoidMono && shapeCells(entry.shape).length <= 2) continue;
       const score = bestAssistScore(entry.shape);
       if (score < 18) continue;
       pool.push({ shape: entry.shape, w: entry.w * score * score });
@@ -934,28 +1169,49 @@
     const preferClear = !!options.preferClear;
     const requirePlaceable = !!options.requirePlaceable;
     const starter = !!options.starter;
+    const avoidMono = !!options.avoidMono;
+    const pools = options.pools || null;
 
     if (preferClear) {
-      const clearing = clearingPool();
+      const clearing =
+        (pools && pools.clearing.get(avoidMono)) ||
+        clearingPool({ avoidMono });
+      if (pools) pools.clearing.set(avoidMono, clearing);
       if (clearing.length) {
         const piece = pieceFromShape(pickWeightedShape(clearing));
         if (!requirePlaceable || anyPlacement(piece)) return piece;
       }
 
-      const assisting = assistPool();
+      const assisting =
+        (pools && pools.assist.get(avoidMono)) ||
+        assistPool({ avoidMono });
+      if (pools) pools.assist.set(avoidMono, assisting);
       if (assisting.length) {
         const piece = pieceFromShape(pickWeightedShape(assisting));
         if (!requirePlaceable || anyPlacement(piece)) return piece;
       }
     }
 
-    const pool = starter ? starterPool() : SHAPES;
+    const base = starter ? starterPool() : SHAPES;
+    const pool = weightedPool(base, { avoidMono });
+    const tryPool = pool.length ? pool : weightedPool(base);
     for (let attempt = 0; attempt < 28; attempt++) {
-      const shape = pickWeightedShape(pool);
+      const shape = pickWeightedShape(tryPool);
       const piece = pieceFromShape(shape);
       if (!requirePlaceable || anyPlacement(piece)) return piece;
     }
 
+    for (const entry of SHAPES) {
+      if (avoidMono && isMonomino(entry.shape)) continue;
+      const piece = pieceFromShape(entry.shape);
+      if (anyPlacement(piece)) return piece;
+    }
+    if (avoidMono) {
+      for (const entry of SHAPES) {
+        if (isMonomino(entry.shape)) continue;
+        return pieceFromShape(entry.shape);
+      }
+    }
     for (const entry of SHAPES) {
       const piece = pieceFromShape(entry.shape);
       if (anyPlacement(piece)) return piece;
@@ -963,20 +1219,41 @@
     return pieceFromShape(SHAPES[0].shape);
   }
 
+  /** Не больше одного 1×1 в тройке — иначе конец партии превращается в «затыкание дырок». */
+  function limitMonominoes(maxCount = 1) {
+    let mono = 0;
+    for (let i = 0; i < state.pieces.length; i++) {
+      const p = state.pieces[i];
+      if (!p || !isMonomino(p.shape)) continue;
+      mono += 1;
+      if (mono <= maxCount) continue;
+      state.pieces[i] = randomPiece({
+        preferClear: true,
+        requirePlaceable: false,
+        avoidMono: true,
+      });
+    }
+  }
+
   function refillPieces() {
     if (!state.pieces.every((p) => !p)) return false;
 
+    const pools = { clearing: new Map(), assist: new Map() };
     const fill = boardFillRatio();
-    const canClearNow = clearingPool().length > 0;
+    const clearingFalse = clearingPool();
+    pools.clearing.set(false, clearingFalse);
+    const canClearNow = clearingFalse.length > 0;
     // Разнообразие только на совсем пустом поле; иначе всегда тянем к ломанию
     const early = fill < 0.07 && !canClearNow;
+    const cramped = fill >= 0.45;
+    const opts = (extra) => ({ ...extra, pools });
 
     if (canClearNow) {
-      // Есть клир — все три фигуры умеют ломать
+      // Есть клир — тянем к ломанию, но без тройки кубиков
       state.pieces = [
-        randomPiece({ preferClear: true, requirePlaceable: true }),
-        randomPiece({ preferClear: true, requirePlaceable: true }),
-        randomPiece({ preferClear: true, requirePlaceable: true }),
+        randomPiece(opts({ preferClear: true, requirePlaceable: true, avoidMono: cramped })),
+        randomPiece(opts({ preferClear: true, requirePlaceable: true, avoidMono: true })),
+        randomPiece(opts({ preferClear: true, requirePlaceable: true })),
       ];
     } else if (early) {
       state.pieces = [
@@ -984,17 +1261,26 @@
         randomPiece({ starter: true, requirePlaceable: true }),
         randomPiece({ starter: true, requirePlaceable: true }),
       ];
+    } else if (cramped) {
+      // Поле забито и клира нет — обычные фигуры, не «спасательные» 1×1
+      state.pieces = [
+        randomPiece(opts({ preferClear: true, requirePlaceable: true, avoidMono: true })),
+        randomPiece(opts({ requirePlaceable: true, avoidMono: true })),
+        randomPiece(opts({ requirePlaceable: false, avoidMono: true })),
+      ];
     } else {
       // Подводим линии к клиру
       state.pieces = [
-        randomPiece({ preferClear: true, requirePlaceable: true }),
-        randomPiece({ preferClear: true, requirePlaceable: true }),
-        randomPiece({ preferClear: true, requirePlaceable: true }),
+        randomPiece(opts({ preferClear: true, requirePlaceable: true, avoidMono: true })),
+        randomPiece(opts({ preferClear: true, requirePlaceable: true })),
+        randomPiece(opts({ preferClear: true, requirePlaceable: true })),
       ];
     }
 
+    limitMonominoes(1);
+
     if (!state.pieces.some((p) => anyPlacement(p))) {
-      state.pieces[0] = randomPiece({ preferClear: true, requirePlaceable: true });
+      state.pieces[0] = randomPiece(opts({ preferClear: true, requirePlaceable: true }));
     }
     return true;
   }
@@ -1138,24 +1424,173 @@
     return remaining.every((p) => !anyPlacement(p));
   }
 
-  function endGame() {
-    if (state.gameOver) return;
-    state.gameOver = true;
-    state.paused = false;
-    pauseOverlay.classList.add("hidden");
-    clearSave();
+  /** Заглушка под рекламу: пока сразу успех. Потом заменить на rewarded ad. */
+  function runReviveAd(onFinished) {
+    onFinished(true);
+  }
 
-    if (state.drag) {
-      clearDragGhost();
-      state.drag = null;
+  function stopReviveTimer() {
+    window.clearInterval(state._reviveTimer);
+    state._reviveTimer = 0;
+  }
+
+  function hideReviveOffer() {
+    stopReviveTimer();
+    if (reviveOverlay) {
+      reviveOverlay.classList.add("hidden");
+      reviveOverlay.classList.remove("is-leaving");
     }
-    renderTray(false);
+    if (reviveBtn) reviveBtn.disabled = false;
+  }
 
+  function showGameOverModal() {
+    overlay.classList.remove("hidden");
+    overlay.classList.remove("is-enter");
+    void overlay.offsetWidth;
+    overlay.classList.add("is-enter");
+    appEl.classList.remove("ending");
+  }
+
+  function setReviveNumber(n, animate) {
+    if (!reviveTimerEl) return;
+    window.clearTimeout(state._reviveNumTimer);
+    if (!animate) {
+      reviveTimerEl.classList.remove("is-out", "is-in", "is-tick");
+      reviveTimerEl.textContent = String(n);
+      return;
+    }
+    reviveTimerEl.classList.remove("is-in", "is-tick");
+    reviveTimerEl.classList.add("is-out");
+    state._reviveNumTimer = window.setTimeout(() => {
+      reviveTimerEl.textContent = String(n);
+      reviveTimerEl.classList.remove("is-out");
+      void reviveTimerEl.offsetWidth;
+      reviveTimerEl.classList.add("is-in");
+    }, 160);
+  }
+
+  function clearDenseLines(count = 2) {
+    const candidates = [];
+    for (let r = 0; r < SIZE; r++) {
+      let n = 0;
+      for (let c = 0; c < SIZE; c++) if (state.grid[r][c]) n += 1;
+      if (n > 0) candidates.push({ kind: "row", i: r, n });
+    }
+    for (let c = 0; c < SIZE; c++) {
+      let n = 0;
+      for (let r = 0; r < SIZE; r++) if (state.grid[r][c]) n += 1;
+      if (n > 0) candidates.push({ kind: "col", i: c, n });
+    }
+    candidates.sort((a, b) => b.n - a.n);
+    const picked = candidates.slice(0, Math.max(1, count));
+    const cleared = [];
+    const seen = new Set();
+    for (const line of picked) {
+      if (line.kind === "row") {
+        for (let c = 0; c < SIZE; c++) {
+          const key = `${line.i},${c}`;
+          if (seen.has(key) || !state.grid[line.i][c]) continue;
+          seen.add(key);
+          cleared.push({ r: line.i, c, color: state.grid[line.i][c] });
+          state.grid[line.i][c] = 0;
+        }
+      } else {
+        for (let r = 0; r < SIZE; r++) {
+          const key = `${r},${line.i}`;
+          if (seen.has(key) || !state.grid[r][line.i]) continue;
+          seen.add(key);
+          cleared.push({ r, c: line.i, color: state.grid[r][line.i] });
+          state.grid[r][line.i] = 0;
+        }
+      }
+    }
+    if (cleared.length) spawnClearFx(cleared);
+    return cleared;
+  }
+
+  function applyRevive() {
+    hideReviveOffer();
+    state.revivedThisRun = true;
+    state.gameOver = false;
+    state.gameOverFinal = false;
+    state.paused = false;
+    overlay.classList.add("hidden");
+    appEl.classList.remove("ending");
+    clearDenseLines(2);
+    state.pieces = [null, null, null];
+    refillPieces();
+    if (!state.pieces.some((p) => anyPlacement(p))) {
+      state.pieces[0] = randomPiece({ preferClear: true, requirePlaceable: true });
+    }
+    renderTray(true);
+    drawBoard(null);
+    if (!state.isDaily) saveGame();
+    sfx.refill();
+    haptics.place();
+  }
+
+  function setReviveRing(left, total = 5) {
+    if (!reviveRingFg) return;
+    const progress = Math.max(0, left / total);
+    reviveRingFg.style.strokeDashoffset = String(REVIVE_RING_LEN * (1 - progress));
+  }
+
+  function goToGameOverScreen() {
+    stopReviveTimer();
+    prepareGameOverStats();
+
+    const fromRevive =
+      reviveOverlay && !reviveOverlay.classList.contains("hidden");
+
+    if (fromRevive) {
+      reviveOverlay.classList.add("is-leaving");
+      window.setTimeout(() => {
+        hideReviveOffer();
+        showGameOverModal();
+        finalizeGameOver();
+      }, 340);
+      return;
+    }
+
+    showGameOverModal();
+    finalizeGameOver();
+  }
+
+  function startReviveOffer() {
+    if (!reviveOverlay || !reviveBtn || !reviveTimerEl) {
+      goToGameOverScreen();
+      return;
+    }
+    let left = 5;
+    setReviveNumber(left, false);
+    setReviveRing(left, 5);
+    reviveOverlay.classList.remove("hidden", "is-leaving");
+    const panel = reviveOverlay.querySelector(".revive-panel");
+    if (panel) {
+      panel.style.animation = "none";
+      void panel.offsetWidth;
+      panel.style.animation = "";
+    }
+    stopReviveTimer();
+    state._reviveTimer = window.setInterval(() => {
+      left -= 1;
+      setReviveNumber(left, true);
+      setReviveRing(Math.max(left, 0), 5);
+      if (left <= 0) {
+        stopReviveTimer();
+        window.setTimeout(() => goToGameOverScreen(), 520);
+      }
+    }, 1000);
+  }
+
+  function prepareGameOverStats() {
     const isNewRecord = state.beatRecordThisRun && state.score > 0;
 
     finalScoreEl.textContent = String(state.score);
-    finalSideLabel.textContent = "Рекорд";
-    finalBestEl.textContent = String(state.best);
+    finalSideLabel.textContent = state.isDaily ? "Сегодня" : "Рекорд";
+    finalBestEl.textContent = String(
+      state.isDaily ? Math.max(loadDaily().best, state.score) : state.best
+    );
 
     if (state.runBestStreak >= 2) {
       finalStreakEl.textContent = `×${state.runBestStreak}`;
@@ -1169,8 +1604,57 @@
       gameoverTitle.textContent = "Отличный забег!";
     } else {
       newRecordBadge.classList.add("hidden");
-      gameoverTitle.textContent = "Конец игры";
+      gameoverTitle.textContent = state.isDaily ? "Дейлик окончен" : "Конец игры";
     }
+
+    if (dailyRecordBadge) dailyRecordBadge.classList.add("hidden");
+  }
+
+  function finalizeGameOver() {
+    if (state.gameOverFinal) return;
+    state.gameOverFinal = true;
+    hideReviveOffer();
+    if (!state.isDaily) clearSave();
+
+    let isNewDaily = false;
+    if (state.isDaily) {
+      const daily = loadDaily();
+      if (state.score > daily.best) {
+        daily.best = state.score;
+        daily.date = localDateKey();
+        saveDaily(daily);
+        state.beatDailyThisRun = true;
+        isNewDaily = true;
+      }
+    }
+
+    if (dailyRecordBadge) {
+      if (isNewDaily && state.score > 0) dailyRecordBadge.classList.remove("hidden");
+      else dailyRecordBadge.classList.add("hidden");
+    }
+
+    // обновить бейджи после записи дневного рекорда
+    if (state.isDaily && isNewDaily && state.score > 0) {
+      finalBestEl.textContent = String(loadDaily().best);
+    }
+
+    trackGameFinished();
+  }
+
+  function endGame() {
+    if (state.gameOver) return;
+    state.gameOver = true;
+    state.gameOverFinal = false;
+    state.paused = false;
+    pauseOverlay.classList.add("hidden");
+    overlay.classList.add("hidden");
+    hideReviveOffer();
+
+    if (state.drag) {
+      clearDragGhost();
+      state.drag = null;
+    }
+    renderTray(false);
 
     appEl.classList.add("ending");
     sfx.gameOver();
@@ -1178,9 +1662,10 @@
 
     window.clearTimeout(state._endTimer);
     state._endTimer = window.setTimeout(() => {
-      overlay.classList.remove("hidden");
       appEl.classList.remove("ending");
-    }, 900);
+      if (!state.revivedThisRun) startReviveOffer();
+      else goToGameOverScreen();
+    }, 700);
   }
 
   function bumpScore() {
@@ -1355,7 +1840,12 @@
     return 1 - Math.pow(1 - t, 3);
   }
 
+  function markBoardDirty() {
+    state.boardDirty = true;
+  }
+
   function drawBoard(preview) {
+    state.boardDirty = false;
     const { origin, cell } = playArea();
     const W = boardCanvas.width;
     const now = state.now;
@@ -1634,6 +2124,8 @@
         sfx.clear(result.lines, state.streak);
         haptics.clear(result.lines + Math.max(0, state.streak - 1));
         addScore(totalPoints);
+        trackClearAchievements(result.lines, state.streak);
+        trackRunAchievements();
         updateComboUI();
         const mid = result.cells[Math.floor(result.cells.length / 2)] || { r: 3, c: 3 };
         showFloatScore(totalPoints, result.lines, state.streak, mid.r, mid.c);
@@ -1691,12 +2183,21 @@
     state.clearBursts = state.clearBursts.filter((p) => now - p.born < p.life);
 
     if (state.screen === "game") {
-      drawBoard(state.drag ? state.drag.preview : null);
+      const animating =
+        state.drag ||
+        state.particles.length > 0 ||
+        state.placePulses.length > 0 ||
+        state.clearBursts.length > 0;
+      if (state.boardDirty || animating) {
+        drawBoard(state.drag ? state.drag.preview : null);
+        if (animating) state.boardDirty = true;
+      }
     }
     requestAnimationFrame(tick);
   }
 
-  function resetGame(fromSave = null) {
+  function resetGame(fromSave = null, options = {}) {
+    const isDaily = !!options.daily;
     clearDragGhost();
     state.drag = null;
     state.particles = [];
@@ -1709,6 +2210,9 @@
     appEl.classList.remove("ending");
     overlay.classList.add("hidden");
     newRecordBadge.classList.add("hidden");
+    if (dailyRecordBadge) dailyRecordBadge.classList.add("hidden");
+
+    state.isDaily = fromSave ? false : isDaily;
 
     if (fromSave) {
       state.best = loadBest();
@@ -1726,6 +2230,7 @@
       state.streak = Number(fromSave.streak) || 0;
       state.runBestStreak = Number(fromSave.runBestStreak) || state.streak;
       state.beatRecordThisRun = !!fromSave.beatRecordThisRun;
+      state.beatDailyThisRun = false;
       state.gameOver = false;
       if (state.pieces.every((p) => !p)) refillPieces();
     } else {
@@ -1736,10 +2241,15 @@
       state.streak = 0;
       state.runBestStreak = 0;
       state.beatRecordThisRun = false;
+      state.beatDailyThisRun = false;
       state.gameOver = false;
-      clearSave();
+      if (!isDaily) clearSave();
       refillPieces();
     }
+
+    state.revivedThisRun = false;
+    state.gameOverFinal = false;
+    hideReviveOffer();
 
     scoreEl.textContent = String(state.score);
     updateComboUI();
@@ -1747,27 +2257,40 @@
     showGame();
     renderTray(true);
     drawBoard(null);
-    if (!fromSave) saveGame();
+    if (!fromSave && !state.isDaily) saveGame();
   }
 
   function startMode() {
-    resetGame(null);
+    resetGame(null, { daily: false });
+  }
+
+  function startDaily() {
+    noteDailyAttempt();
+    resetGame(null, { daily: true });
   }
 
   function onRestart(e) {
     e.preventDefault();
     sfx.unlock();
     sfx.click();
+    if (state.gameOver && !state.gameOverFinal) finalizeGameOver();
     state.paused = false;
     pauseOverlay.classList.add("hidden");
-    resetGame(null);
+    if (state.isDaily) {
+      noteDailyAttempt();
+      resetGame(null, { daily: true });
+    } else {
+      resetGame(null, { daily: false });
+    }
   }
 
   function onToMenu(e) {
     e.preventDefault();
     sfx.unlock();
     sfx.click();
-    clearSave();
+    if (state.gameOver && !state.gameOverFinal) finalizeGameOver();
+    if (!state.isDaily) clearSave();
+    state.isDaily = false;
     showMenu();
   }
 
@@ -1786,17 +2309,34 @@
     if (haptics.isEnabled()) haptics.tap();
   }
 
-  function toggleThemeFromUi() {
-    sfx.unlock();
-    theme.toggle();
-    updateThemeUI();
-    refreshThemeVisuals();
-    sfx.click();
-  }
-
   restartBtn.addEventListener("click", onRestart);
   pauseRestartBtn.addEventListener("click", onRestart);
   toMenuBtn.addEventListener("click", onToMenu);
+
+  if (reviveBtn) {
+    reviveBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!state.gameOver || state.gameOverFinal || state.revivedThisRun) return;
+      sfx.unlock();
+      sfx.click();
+      stopReviveTimer();
+      reviveBtn.disabled = true;
+      runReviveAd((ok) => {
+        reviveBtn.disabled = false;
+        if (ok) applyRevive();
+        else goToGameOverScreen();
+      });
+    });
+  }
+
+  if (reviveSkipBtn) {
+    reviveSkipBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      sfx.unlock();
+      sfx.click();
+      goToGameOverScreen();
+    });
+  }
 
   pauseBtn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -1816,8 +2356,11 @@
     e.preventDefault();
     sfx.unlock();
     sfx.click();
-    // Выход в меню = сдаться; сохранение только при закрытии приложения во время катки
-    clearSave();
+    if (state.isDaily) {
+      state.isDaily = false;
+    } else {
+      clearSave();
+    }
     showMenu();
   });
 
@@ -1831,7 +2374,7 @@
   settingsCloseBtn.addEventListener("click", (e) => {
     e.preventDefault();
     sfx.unlock();
-    sfx.click();
+    sfx.dismiss();
     closeSettings();
   });
 
@@ -1845,13 +2388,12 @@
     toggleVibroFromUi();
   });
 
-  settingsThemeBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    toggleThemeFromUi();
-  });
-
   settingsOverlay.addEventListener("click", (e) => {
-    if (e.target === settingsOverlay) closeSettings();
+    if (e.target === settingsOverlay) {
+      sfx.unlock();
+      sfx.dismiss();
+      closeSettings();
+    }
   });
 
   const playBtn = document.getElementById("play-btn");
@@ -1860,6 +2402,42 @@
       sfx.unlock();
       sfx.click();
       startMode();
+    });
+  }
+
+  if (dailyBtn) {
+    dailyBtn.addEventListener("click", () => {
+      sfx.unlock();
+      sfx.click();
+      startDaily();
+    });
+  }
+
+  if (achievementsBtn) {
+    achievementsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      sfx.unlock();
+      sfx.click();
+      openAchievements();
+    });
+  }
+
+  if (achievementsCloseBtn) {
+    achievementsCloseBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      sfx.unlock();
+      sfx.dismiss();
+      closeAchievements();
+    });
+  }
+
+  if (achievementsOverlay) {
+    achievementsOverlay.addEventListener("click", (e) => {
+      if (e.target === achievementsOverlay) {
+        sfx.unlock();
+        sfx.dismiss();
+        closeAchievements();
+      }
     });
   }
 
@@ -1873,23 +2451,35 @@
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
-      saveGame();
+      if (state._saveTimer) {
+        window.clearTimeout(state._saveTimer);
+        state._saveTimer = 0;
+      }
+      flushSaveGame();
       if (state.screen === "game" && !state.gameOver) pauseGame();
     }
   });
-  window.addEventListener("pagehide", () => saveGame());
+  window.addEventListener("pagehide", () => {
+    if (state._saveTimer) {
+      window.clearTimeout(state._saveTimer);
+      state._saveTimer = 0;
+    }
+    flushSaveGame();
+  });
 
   window.addEventListener("resize", () => {
     if (state.drag || state.screen !== "game") return;
     const slot = trayEl.querySelector(".piece-canvas");
     if (!slot) {
       renderTray(false);
+      markBoardDirty();
       return;
     }
     const w = slot.clientWidth;
     if (Math.abs(w - (state._trayW || 0)) < 2) return;
     state._trayW = w;
     renderTray(false);
+    markBoardDirty();
   });
 
   updateSettingsUI();

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Grid Crush</title>
-  <link rel="stylesheet" href="style.css?v=1.2.3" />
+  <link rel="stylesheet" href="style.css?v=1.5.1" />
 </head>
 <body>
   <div id="menu" class="menu">
@@ -23,6 +23,10 @@
       <span class="menu-bg-block menu-bg-block--drift" style="--c:#b388ff; --x:30%; --s:34px; --d:-6s; --t:26s; --o:0.12"></span>
       <span class="menu-bg-block menu-bg-block--drift" style="--c:#ff6b8a; --x:70%; --s:30px; --d:-11s; --t:28s; --o:0.12"></span>
     </div>
+
+    <button type="button" id="achievements-btn" class="icon-btn icon-btn--corner-left" aria-label="Достижения" title="Достижения">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+    </button>
 
     <button type="button" id="settings-btn" class="icon-btn icon-btn--corner" aria-label="Настройки" title="Настройки">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
@@ -44,6 +48,10 @@
 
       <div class="menu-actions">
         <button type="button" id="play-btn" class="play-btn">Играть</button>
+        <button type="button" id="daily-btn" class="daily-btn">
+          <span class="daily-btn-title">На сегодня</span>
+          <span class="daily-btn-meta" id="daily-best-label">Сегодня · —</span>
+        </button>
       </div>
     </div>
   </div>
@@ -85,10 +93,6 @@
           <svg class="icon-on" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
           <svg class="icon-off" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/><path d="m2 2 20 20"/></svg>
         </button>
-        <button id="settings-theme-btn" type="button" class="icon-btn" aria-label="Тема" title="Тема">
-          <svg class="icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
-          <svg class="icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-        </button>
         <button id="settings-close-btn" type="button" class="icon-btn" aria-label="Закрыть" title="Закрыть">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
@@ -100,23 +104,35 @@
     <div class="modal pause-modal">
       <h1>Пауза</h1>
       <p id="pause-meta" class="modal-sub">Классика</p>
-      <div class="icon-row" role="group" aria-label="Пауза">
-        <button id="resume-btn" type="button" class="icon-btn" aria-label="Продолжить" title="Продолжить">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
-        </button>
-        <button id="pause-restart-btn" type="button" class="icon-btn" aria-label="Заново" title="Заново">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        </button>
-        <button id="pause-menu-btn" type="button" class="icon-btn" aria-label="В меню" title="В меню">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        </button>
+      <div class="pause-actions" role="group" aria-label="Пауза">
+        <button id="resume-btn" type="button" class="btn-primary">Продолжить</button>
+        <button id="pause-restart-btn" type="button" class="btn-secondary">Рестарт</button>
+        <button id="pause-menu-btn" type="button" class="btn-secondary">В меню</button>
       </div>
+    </div>
+  </div>
+
+  <div id="revive-overlay" class="overlay revive-overlay hidden">
+    <div class="revive-panel">
+      <div class="revive-ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <circle class="revive-ring-bg" cx="60" cy="60" r="52" />
+          <circle class="revive-ring-fg" id="revive-ring-fg" cx="60" cy="60" r="52" />
+        </svg>
+        <span class="revive-ring-count" id="revive-timer">5</span>
+      </div>
+      <p class="revive-caption">Можно продолжить</p>
+      <button id="revive-btn" type="button" class="revive-btn">
+        <span class="revive-btn-title">Возрождение</span>
+      </button>
+      <button id="revive-skip-btn" type="button" class="revive-skip">Пропустить</button>
     </div>
   </div>
 
   <div id="overlay" class="overlay hidden">
     <div class="modal">
       <div id="new-record-badge" class="new-record hidden">Новый рекорд!</div>
+      <div id="daily-record-badge" class="new-record new-record--daily hidden">Рекорд дня!</div>
       <h1 id="gameover-title">Конец игры</h1>
       <div class="modal-stats">
         <div class="stat">
@@ -128,15 +144,38 @@
           <span id="final-best" class="ms-value">0</span>
         </div>
         <div id="final-streak-wrap" class="stat hidden">
-          <span class="ms-label">Лучшая серия</span>
+          <span class="ms-label">Серия</span>
           <span id="final-streak" class="ms-value">0</span>
         </div>
       </div>
-      <button id="restart" type="button">Ещё раз</button>
+      <button id="restart" type="button" class="btn-primary">Ещё раз</button>
       <button id="to-menu" type="button" class="btn-secondary">В меню</button>
     </div>
   </div>
 
-  <script src="game.js?v=1.2.3"></script>
+  <div id="achievements-overlay" class="overlay hidden">
+    <div class="modal achievements-modal">
+      <div class="achievements-head">
+        <div class="achievements-head-text">
+          <p class="achievements-eyebrow">Коллекция</p>
+          <h1>Достижения</h1>
+          <p id="achievements-count" class="achievements-count">0 / 9</p>
+        </div>
+        <button id="achievements-close-btn" type="button" class="icon-btn icon-btn--sm" aria-label="Закрыть" title="Закрыть">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div id="achievements-list" class="achievements-list"></div>
+    </div>
+  </div>
+
+  <div id="ach-toast" class="ach-toast hidden" role="status" aria-live="polite">
+    <div class="ach-toast-inner">
+      <span class="ach-toast-eyebrow">Достижение</span>
+      <span class="ach-toast-title" id="ach-toast-title"></span>
+    </div>
+  </div>
+
+  <script src="game.js?v=1.5.1"></script>
 </body>
 </html>
